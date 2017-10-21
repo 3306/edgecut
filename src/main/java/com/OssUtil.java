@@ -1,42 +1,50 @@
 package com;
 
 import com.aliyun.oss.OSSClient;
-import com.aliyun.oss.model.ObjectListing;
+import com.aliyun.oss.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Service
-public class OssUtil {
-
-//    @Value("${oss.endpoint}")
-//    private String endpoint;
+public class OssUtil implements InitializingBean{
 
     private OSSClient ossClient;
     private String bucketName = "edgecut";
 
+    private Logger logger = LoggerFactory.getLogger(getClass());
+
     public void init(){
-        // endpoint以杭州为例，其它region请按实际情况填写
-        String endpoint = "http://oss-cn-shanghai.aliyuncs.com";
-        // 云账号AccessKey有所有API访问权限，建议遵循阿里云安全最佳实践，创建并使用RAM子账号进行API访问或日常运维，请登录 https://ram.console.aliyun.com 创建
-        String accessKeyId = "";
-        String accessKeySecret = "";
-        // 创建OSSClient实例
+        String endpoint = System.getProperty("endpoint");
+        String accessKeyId = System.getProperty("accessKeyId");
+        String accessKeySecret = System.getProperty("accessKeySecret");
         ossClient = new OSSClient(endpoint, accessKeyId, accessKeySecret);
     }
 
-    public List<String> ls(String prefix){
-        ObjectListing objectListing = ossClient.listObjects(bucketName, prefix);
-        return objectListing.getObjectSummaries().stream().map(summary -> {
-            return summary.getKey();
-        }).collect(Collectors.toList());
+    public ObjectListing ls(String prefix, String nextMarker, int maxKeys){
+        ListObjectsRequest request = new ListObjectsRequest(bucketName)
+                .withPrefix(prefix).withMarker(nextMarker).withMaxKeys(maxKeys);
+        return ossClient.listObjects(request);
     }
 
-    public static void main(String[] args) {
-        OssUtil ossUtil = new OssUtil();
-        ossUtil.init();
-        System.out.println(ossUtil.ls("1/"));
+    public ObjectMetadata getMetaData(String key){
+        return ossClient.getObjectMetadata(bucketName, key);
     }
 
+    public void addMetaData(String key, String k, String v){
+        ObjectMetadata objectMetadata = getMetaData(key);
+        objectMetadata.addUserMetadata(k, v);
+
+        CopyObjectRequest copyObjectRequest = new CopyObjectRequest(bucketName, key, bucketName, key);
+        copyObjectRequest.setNewObjectMetadata(objectMetadata);
+
+        CopyObjectResult copyObjectResult = ossClient.copyObject(copyObjectRequest);
+        logger.info("addMetaData key={} k={} v={} etag={} lastModified={}", key, k, v, copyObjectResult.getETag(), copyObjectResult.getLastModified());
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        init();
+    }
 }
