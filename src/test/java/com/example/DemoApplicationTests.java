@@ -2,6 +2,7 @@ package com.example;
 
 import com.Application;
 import com.EdgeCutService;
+import com.OssUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
@@ -15,6 +16,8 @@ public class DemoApplicationTests {
 
 	@Resource
 	private EdgeCutService edgeCutService;
+	@Resource
+	private OssUtil ossUtil;
 
 	@Test
 	public void contextLoads() {
@@ -30,6 +33,11 @@ public class DemoApplicationTests {
 	public void testBatchRun() throws InterruptedException {
 		edgeCutService.batchRun("test/");
 		Thread.sleep(10000000L);
+	}
+
+	@Test
+	public void testGetBaseDir(){
+		System.out.println(ossUtil.getBaseDir());
 	}
 
 }

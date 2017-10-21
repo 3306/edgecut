@@ -37,6 +37,12 @@ public class ServiceController {
         return edgeCutService.batchRun(prefix);
     }
 
+    @RequestMapping("/service/baseDir")
+    @ResponseBody
+    public List<String> baseDir(){
+        return ossUtil.getBaseDir();
+    }
+
     @RequestMapping("/service/result")
     @ResponseBody
     public Map<String, Object> getResult(@RequestParam("prefix")String prefixInput,
