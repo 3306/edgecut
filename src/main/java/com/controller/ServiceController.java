@@ -43,6 +43,23 @@ public class ServiceController {
         return ossUtil.getBaseDir();
     }
 
+    @RequestMapping("/service/reject")
+    @ResponseBody
+    public void reject(@RequestParam("key") String key){
+        ossUtil.addMetaData(key, "cutstatus", "-1");
+    }
+
+    @RequestMapping("/service/update")
+    @ResponseBody
+    public void update(@RequestParam("key") String key,
+                       @RequestParam("x") String x,
+                       @RequestParam("y") String y,
+                       @RequestParam("w") String w,
+                       @RequestParam("d") String d){
+        String edge = String.format("%s/%s/%s/%s", x, y, w, d);
+        ossUtil.addMetaData(key, "edge", edge);
+    }
+
     @RequestMapping("/service/result")
     @ResponseBody
     public Map<String, Object> getResult(@RequestParam("prefix")String prefixInput,
@@ -52,7 +69,7 @@ public class ServiceController {
         ObjectListing ls = ossUtil.ls(prefix, next, Integer.valueOf(count));
         Map<String, Object> data = new HashMap<>();
         List<CutResult> edgeResults = ls.getObjectSummaries().stream().filter(ossObjectSummary -> !ossObjectSummary.getKey().equals(prefix)).map(ossObjectSummary -> {
-            CutResult cutResult = new CutResult();
+            CutResult cutResult = new CutResult(ossObjectSummary.getKey());
             cutResult.setOriginDownloadUrl(ossUrl + ossObjectSummary.getKey());
             cutResult.setOriginShowUrl(ossUrl + ossObjectSummary.getKey() + "?x-oss-process=image/format,webp/resize,w_800");
             ObjectMetadata metaData = ossUtil.getMetaData(ossObjectSummary.getKey());
@@ -72,6 +89,7 @@ public class ServiceController {
                     cutResult.setCutDownloadUrl(ossUrl + ossObjectSummary.getKey() + String.format("?x-oss-process=image/crop,x_%d,y_%d,w_%d,h_%d", x, y, w, d));
                 }
             }
+            cutResult.setStatus(metaData.getUserMetadata().get("cutstatus"));
             return cutResult;
         }).collect(Collectors.toList());
         data.put("data", edgeResults);

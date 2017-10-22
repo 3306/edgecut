@@ -1,11 +1,17 @@
 package com;
 
 public class CutResult {
+    private String key;
     private String originDownloadUrl;
     private String originShowUrl;
     private String cutShowUrl;
     private String cutDownloadUrl;
     private Integer x,y,w,d;
+    private String status;
+
+    public CutResult(String key) {
+        this.key = key;
+    }
 
     public String getOriginDownloadUrl() {
         return originDownloadUrl;
@@ -69,5 +75,21 @@ public class CutResult {
 
     public void setD(Integer d) {
         this.d = d;
+    }
+
+    public String getKey() {
+        return key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }
