@@ -6,7 +6,7 @@ public class CutResult {
     private String originShowUrl;
     private String cutShowUrl;
     private String cutDownloadUrl;
-    private Integer x,y,w,d;
+    private Integer x,y,w,h;
     private String status;
 
     public CutResult(String key) {
@@ -69,12 +69,12 @@ public class CutResult {
         this.w = w;
     }
 
-    public Integer getD() {
-        return d;
+    public Integer getH() {
+        return h;
     }
 
-    public void setD(Integer d) {
-        this.d = d;
+    public void setH(Integer h) {
+        this.h = h;
     }
 
     public String getKey() {

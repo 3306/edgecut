@@ -41,6 +41,7 @@ public class EdgeCutService {
             }
             String edge = String.format("%d/%d/%d/%d", result.get(0), result.get(1), result.get(2), result.get(3));
             ossUtil.addMetaData(filePath, "edge", edge);
+            ossUtil.addMetaData(filePath, "cutstatus", "0");
         } catch (Throwable e) {
             logger.error("work error. filePath = {}", filePath, e);
         }

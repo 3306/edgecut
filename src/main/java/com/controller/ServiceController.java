@@ -55,9 +55,10 @@ public class ServiceController {
                        @RequestParam("x") String x,
                        @RequestParam("y") String y,
                        @RequestParam("w") String w,
-                       @RequestParam("d") String d){
-        String edge = String.format("%s/%s/%s/%s", x, y, w, d);
+                       @RequestParam("h") String h){
+        String edge = String.format("%d/%d/%d/%d", Integer.valueOf(x), Integer.valueOf(y), Integer.valueOf(w), Integer.valueOf(h));
         ossUtil.addMetaData(key, "edge", edge);
+        ossUtil.addMetaData(key, "cutstatus", "1");
     }
 
     @RequestMapping("/service/result")
@@ -80,13 +81,13 @@ public class ServiceController {
                     int x = Integer.valueOf(split[0]);
                     int y = Integer.valueOf(split[1]);
                     int w = Integer.valueOf(split[2]);
-                    int d = Integer.valueOf(split[3]);
+                    int h = Integer.valueOf(split[3]);
                     cutResult.setX(x);
                     cutResult.setY(y);
                     cutResult.setW(w);
-                    cutResult.setD(d);
-                    cutResult.setCutShowUrl(ossUrl + ossObjectSummary.getKey() + String.format("?x-oss-process=image/crop,x_%d,y_%d,w_%d,h_%d/format,webp/resize,w_800", x, y, w, d));
-                    cutResult.setCutDownloadUrl(ossUrl + ossObjectSummary.getKey() + String.format("?x-oss-process=image/crop,x_%d,y_%d,w_%d,h_%d", x, y, w, d));
+                    cutResult.setH(h);
+                    cutResult.setCutShowUrl(ossUrl + ossObjectSummary.getKey() + String.format("?x-oss-process=image/crop,x_%d,y_%d,w_%d,h_%d/format,webp/resize,w_800", x, y, w, h));
+                    cutResult.setCutDownloadUrl(ossUrl + ossObjectSummary.getKey() + String.format("?x-oss-process=image/crop,x_%d,y_%d,w_%d,h_%d", x, y, w, h));
                 }
             }
             cutResult.setStatus(metaData.getUserMetadata().get("cutstatus"));
