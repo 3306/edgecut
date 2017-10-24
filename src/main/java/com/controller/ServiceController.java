@@ -40,6 +40,7 @@ public class ServiceController {
     @RequestMapping("/service/baseDir")
     @ResponseBody
     public List<String> baseDir(){
+        //只是为了push一下
         return ossUtil.getBaseDir();
     }
 
