@@ -3,9 +3,10 @@ package com.controller;
 import com.CutResult;
 import com.EdgeCutService;
 import com.OssUtil;
-import com.aliyun.oss.model.OSSObjectSummary;
+import com.StsService;
 import com.aliyun.oss.model.ObjectListing;
 import com.aliyun.oss.model.ObjectMetadata;
+import com.aliyuncs.sts.model.v20150401.AssumeRoleResponse;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,19 +17,21 @@ import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Controller
+@RequestMapping("/service")
 public class ServiceController {
     @Resource
     private EdgeCutService edgeCutService;
     @Resource
     private OssUtil ossUtil;
+    @Resource
+    private StsService stsService;
 
     private String ossUrl = "http://edgecut.oss-cn-shanghai.aliyuncs.com/";
 
-    @RequestMapping("/service/run")
+    @RequestMapping("/run")
     @ResponseBody
     public int batchRun(@RequestParam("prefix")String prefix){
         if (!prefix.endsWith("/")){
@@ -37,20 +40,31 @@ public class ServiceController {
         return edgeCutService.batchRun(prefix);
     }
 
-    @RequestMapping("/service/baseDir")
+    @RequestMapping("/baseDir")
     @ResponseBody
     public List<String> baseDir(){
-        //只是为了push一下
         return ossUtil.getBaseDir();
     }
 
-    @RequestMapping("/service/reject")
+    @RequestMapping("/stsUpload")
+    @ResponseBody
+    public AssumeRoleResponse.Credentials stsUpload(){
+        AssumeRoleResponse assumeRoleResponse = stsService.getToken();
+
+        if (assumeRoleResponse != null){
+            return assumeRoleResponse.getCredentials();
+        }
+
+        return null;
+    }
+
+    @RequestMapping("/reject")
     @ResponseBody
     public void reject(@RequestParam("key") String key){
         ossUtil.addMetaData(key, "cutstatus", "-1");
     }
 
-    @RequestMapping("/service/update")
+    @RequestMapping("/update")
     @ResponseBody
     public void update(@RequestParam("key") String key,
                        @RequestParam("x") String x,
@@ -62,7 +76,7 @@ public class ServiceController {
         ossUtil.addMetaData(key, "cutstatus", "1");
     }
 
-    @RequestMapping("/service/result")
+    @RequestMapping("/result")
     @ResponseBody
     public Map<String, Object> getResult(@RequestParam("prefix")String prefixInput,
                                          @RequestParam(required = false, value = "next") String next,
