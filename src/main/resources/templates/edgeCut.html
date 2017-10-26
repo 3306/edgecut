@@ -1,0 +1,56 @@
+
+<html>
+<head>
+    <link href="//cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <link href="//cdn.bootcss.com/jquery-jcrop/0.9.12/css/jquery.Jcrop.min.css" rel="stylesheet">
+    <link href="//cdn.bootcss.com/jquery-jgrowl/1.4.6/jquery.jgrowl.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../static/all.css">
+    <script src="//cdn.bootcss.com/jquery/3.2.0/jquery.min.js"></script>
+    <script src="//cdn.bootcss.com/jquery-jcrop/0.9.12/js/jquery.Jcrop.min.js"></script>
+    <script src="//cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="//cdn.bootcss.com/jquery-jgrowl/1.4.6/jquery.jgrowl.min.js"></script>
+</head>
+<body>
+<nav class="navbar navbar-default">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">蜜汁抠图</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+                <li class="active"><a href="#">Home</a></li>
+            </ul>
+        </div><!--/.nav-collapse -->
+    </div><!--/.container-fluid -->
+</nav>
+
+<!-- Main component for a primary marketing message or call to action -->
+
+<div>
+
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs" role="tablist">
+        <li role="presentation" class="active"><a href="#home" aria-controls="home" role="tab" data-toggle="tab">未人工修改</a></li>
+        <li role="presentation"><a href="#profile" aria-controls="profile" role="tab" data-toggle="tab">已人工修改</a></li>
+    </ul>
+
+    <!-- Tab panes -->
+    <div class="tab-content">
+        <div role="tabpanel" class="tab-pane active" id="home"><div id="list" class="row"></div></div>
+        <div role="tabpanel" class="tab-pane" id="profile">
+            <div id="fixedList" class="row"></div>
+        </div>
+    </div>
+
+</div>
+
+
+</body>
+<script src="../static/edgeCut.js" charset="UTF-8"></script>
+</html>
