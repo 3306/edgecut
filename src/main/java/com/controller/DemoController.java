@@ -33,16 +33,16 @@ public class DemoController {
         return "uploadFile";
     }
 
-    @RequestMapping("/batchManage")
-    public String batchManage(){
-        return "batchManage";
-    }
-
-
-    @RequestMapping("/edgeCut")
-    public String edgeCut(){
-        return "edgeCut";
-    }
+//    @RequestMapping("/batchManage")
+//    public String batchManage(){
+//        return "batchManage";
+//    }
+//
+//
+//    @RequestMapping("/edgeCut")
+//    public String edgeCut(){
+//        return "edgeCut";
+//    }
 
     @RequestMapping("/test")
     public void test(HttpServletRequest request, HttpServletResponse response, @RequestParam(value = "file", required = false) MultipartFile file) throws IOException {
