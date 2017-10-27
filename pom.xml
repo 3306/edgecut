@@ -89,6 +89,7 @@
 	</dependencies>
 	
 	<build>
+		<finalName>edgecut</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
