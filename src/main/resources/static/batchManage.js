@@ -1,5 +1,3 @@
-
-console.log(OSS);
 (($)=>{
 
     let tbody = $('#mainTable');
@@ -10,7 +8,7 @@ $.ajax({
         let result = res.map((item)=>{
                 return `<tr>
                         <td>
-                            <a href="/cropPic/index.html?prefix=${item.substr(0,item.length-1)}&count=200">${item}</a>
+                            <a href="./edgeCut.html?prefix=${item.substr(0,item.length-1)}&count=200">${item}</a>
                         </td>
                         <td>
                         <a class="btn btn-default run" data-key="${item.substr(0,item.length-1)}">运行</a>

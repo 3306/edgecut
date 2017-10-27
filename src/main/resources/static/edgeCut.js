@@ -10,7 +10,7 @@
     let listItemTemplate = (imgUrl,key)=>{
         return `    <div class="col-xs-4">
     <div class="my-thumbnail">
-      <img id="${getId(key)}" src="${imgUrl}">
+      <img id="${getId(key)}" src="${imgUrl}" alt="123121323">
       <div class="caption">
         <a data-originkey="${key}" data-key="${getId(key)}" class="alter-pic btn btn-primary btn-block" role="button">确认修改</a>
       </div>
