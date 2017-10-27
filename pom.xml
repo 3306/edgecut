@@ -83,7 +83,7 @@
 		<dependency>
 			<groupId>com.aliyun</groupId>
 			<artifactId>aliyun-java-sdk-core</artifactId>
-			<version>3.0.7</version>
+			<version>3.4.0</version>
 		</dependency>
 
 	</dependencies>
