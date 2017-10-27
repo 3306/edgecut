@@ -2,20 +2,19 @@ package com;
 
 import com.aliyun.oss.model.OSSObjectSummary;
 import com.aliyun.oss.model.ObjectListing;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
-import java.util.StringJoiner;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.io.*;
+import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @Service
 public class EdgeCutService {
@@ -31,25 +30,7 @@ public class EdgeCutService {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
-    public void runSync(String filePath){
-        String diskFilePath = ossDir + "/" + filePath;
-        try {
-            List<Integer> result = work(diskFilePath);
-            if (result == null || result.size() != 4){
-                logger.error("work failed. filePath = {}", filePath);
-                return;
-            }
-            String edge = String.format("%d/%d/%d/%d", result.get(0), result.get(1), result.get(2), result.get(3));
-            ossUtil.addMetaData(filePath, "edge", edge);
-            ossUtil.addMetaData(filePath, "cutstatus", "0");
-        } catch (Throwable e) {
-            logger.error("work error. filePath = {}", filePath, e);
-        }
-    }
-
-    public void runAsync(String filePath){
-        threadPoolExecutor.execute(() -> runSync(filePath));
-    }
+    //切图
 
     public int batchRun(String prefix){
         String next = null;
@@ -69,6 +50,26 @@ public class EdgeCutService {
             }
         } while (ls.isTruncated());
         return cnt;
+    }
+
+    public void runSync(String filePath){
+        String diskFilePath = ossDir + "/" + filePath;
+        try {
+            List<Integer> result = work(diskFilePath);
+            if (result == null || result.size() != 4){
+                logger.error("work failed. filePath = {}", filePath);
+                return;
+            }
+            String edge = String.format("%d/%d/%d/%d", result.get(0), result.get(1), result.get(2), result.get(3));
+            ossUtil.addMetaData(filePath, "edge", edge);
+            ossUtil.addMetaData(filePath, "cutstatus", "0");
+        } catch (Throwable e) {
+            logger.error("work error. filePath = {}", filePath, e);
+        }
+    }
+
+    public void runAsync(String filePath){
+        threadPoolExecutor.execute(() -> runSync(filePath));
     }
 
     private List<Integer> work(String filePath) throws IOException {
@@ -112,5 +113,87 @@ public class EdgeCutService {
         result.add(h);
         logger.info("filePath = {} result = {}", fileName, result);
         return result;
+    }
+
+    //下载
+
+    public Integer batchDownload(String prefix){
+        ObjectListing objectListing;
+        String nextMarker = null;
+        int cnt = 0;
+
+        DownloadTask downloadTask = new DownloadTask(ossDir + "/" + prefix.replace("/", "") + ".zip");
+        do {
+            objectListing = ossUtil.ls(prefix, nextMarker, 10);
+            for (OSSObjectSummary summary : objectListing.getObjectSummaries()) {
+                if (prefix.equals(summary.getKey())){
+                    continue;
+                }
+                downloadTask.getAllCnt().incrementAndGet();
+                downloadAsync(downloadTask, summary.getKey());
+                cnt ++;
+            }
+            nextMarker = objectListing.getNextMarker();
+        } while (objectListing.isTruncated());
+        downloadTask.setFinish(true);
+        downloadAsync(downloadTask, null);
+        return cnt;
+    }
+
+    public void downloadSync(DownloadTask downloadTask, String key){
+        try {
+            if (key == null){
+                return;
+            }
+            String edge = ossUtil.getMetaData(key).getUserMetadata().get("edge");
+            if (StringUtils.isBlank(edge)) {
+                return;
+            }
+            String[] split = edge.split("/");
+            if (split.length != 4) {
+                return;
+            }
+
+            int x = Integer.valueOf(split[0]);
+            int y = Integer.valueOf(split[1]);
+            int w = Integer.valueOf(split[2]);
+            int h = Integer.valueOf(split[3]);
+            String style = String.format("image/crop,x_%d,y_%d,w_%d,h_%d", x, y, w, h);
+            download(downloadTask, key, style);
+        } catch (Exception e){
+            logger.error("download error. key = {}", key, e);
+        } finally {
+            downloadTask.tryClose(key);
+            logger.info("download report: key = {} allFile = {} finishFile = {} finish = {}",
+                    key,
+                    downloadTask.getAllCnt(),
+                    downloadTask.getFinishCnt(),
+                    downloadTask.getFinish());
+        }
+
+    }
+
+    public void downloadAsync(DownloadTask downloadTask, String key){
+        threadPoolExecutor.execute(() -> downloadSync(downloadTask, key));
+    }
+
+    private void download(DownloadTask downloadTask, String key, String style) throws IOException {
+        File toZip = File.createTempFile("toZip", ".tif");
+        ossUtil.getObject(key, style, toZip);
+        downloadTask.nextEntry(key.substring(key.indexOf("/") + 1), toZip);
+    }
+
+    public static void main(String[] args) throws IOException {
+        ZipOutputStream zos = new ZipOutputStream(new FileOutputStream("test.zip"));
+        zos.putNextEntry(new ZipEntry("profile1"));
+        FileInputStream fis = new FileInputStream(".gitignore");
+        byte[] tmp = new byte[102400];
+        int t = 0;
+        while((t = fis.read(tmp)) != -1){
+            zos.write(tmp, 0, t);
+        }
+        fis.close();
+        zos.closeEntry();
+        zos.close();
     }
 }

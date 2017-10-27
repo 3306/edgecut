@@ -40,4 +40,10 @@ public class DemoApplicationTests {
 		System.out.println(ossUtil.getBaseDir());
 	}
 
+	@Test
+	public void testBatchDownload() throws InterruptedException {
+		System.out.println(edgeCutService.batchDownload("test/"));
+		Thread.sleep(10000000L);
+	}
+
 }

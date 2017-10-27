@@ -46,6 +46,11 @@ public class ServiceController {
         return ossUtil.getBaseDir();
     }
 
+    @RequestMapping("/download")
+    public String download(@RequestParam("prefix") String prefix){
+        return ossUrl + "/" + edgeCutService.batchDownload(prefix);
+    }
+
     @RequestMapping("/stsUpload")
     @ResponseBody
     public AssumeRoleResponse.Credentials stsUpload(){

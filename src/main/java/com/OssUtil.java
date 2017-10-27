@@ -4,24 +4,28 @@ import com.aliyun.oss.OSSClient;
 import com.aliyun.oss.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.util.List;
 
 @Service
-public class OssUtil implements InitializingBean{
+public class OssUtil {
 
-    private OSSClient ossClient;
     private String bucketName = "edgecut";
+    private String endpoint = System.getProperty("endpoint");
+    private String accessKeyId = System.getProperty("accessKeyId");
+    private String accessKeySecret = System.getProperty("accessKeySecret");
+    private OSSClient ossClient = new OSSClient(endpoint, accessKeyId, accessKeySecret);
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
-    public void init(){
-        String endpoint = System.getProperty("endpoint");
-        String accessKeyId = System.getProperty("accessKeyId");
-        String accessKeySecret = System.getProperty("accessKeySecret");
-        ossClient = new OSSClient(endpoint, accessKeyId, accessKeySecret);
+    public String getEndpoint() {
+        return endpoint;
+    }
+
+    public String getBucketName() {
+        return bucketName;
     }
 
     public ObjectListing ls(String prefix, String nextMarker, int maxKeys){
@@ -52,9 +56,11 @@ public class OssUtil implements InitializingBean{
         return listing.getCommonPrefixes();
     }
 
-
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        init();
+    public ObjectMetadata getObject(String key, String style, File file){
+        GetObjectRequest request = new GetObjectRequest(bucketName, key);
+        request.setProcess(style);
+        return ossClient.getObject(request, file);
     }
+
+
 }
