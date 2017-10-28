@@ -1,4 +1,4 @@
-package com;
+package com.edgecut.oss;
 
 public class CutResult {
     private String key;

@@ -1,4 +1,4 @@
-package com;
+package com.edgecut.service;
 
 import com.aliyuncs.DefaultAcsClient;
 import com.aliyuncs.exceptions.ClientException;

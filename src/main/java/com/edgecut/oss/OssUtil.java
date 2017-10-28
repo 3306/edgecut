@@ -1,4 +1,4 @@
-package com;
+package com.edgecut.oss;
 
 import com.aliyun.oss.OSSClient;
 import com.aliyun.oss.model.*;
@@ -61,6 +61,4 @@ public class OssUtil {
         request.setProcess(style);
         return ossClient.getObject(request, file);
     }
-
-
 }
