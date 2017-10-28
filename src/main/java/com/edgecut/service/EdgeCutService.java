@@ -103,7 +103,13 @@ public class EdgeCutService {
         }
 
         if (cnt != 5){
-            logger.error("executor failed. filePath = {}", filePath);
+            logger.error("executor failed. cnt = {} filePath = {}", cnt, filePath);
+            try (Scanner errScanner = new Scanner(p.getErrorStream())) {
+                while (errScanner.hasNext()){
+                    logger.warn("executor errMsg : {}", errScanner.nextLine());
+                }
+                logger.warn("executor errMsg finish");
+            }
             return null;
         }
 
