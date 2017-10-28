@@ -73,7 +73,7 @@ public class EdgeCutService {
     }
 
     private List<Integer> work(String filePath) throws IOException {
-        String commandStr = executor + " " + filePath;
+        String commandStr = String.format("%s \"%s\"",executor, filePath);
         Process p = Runtime.getRuntime().exec(commandStr);
         Scanner scanner = new Scanner(p.getInputStream());
 
