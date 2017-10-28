@@ -1,5 +1,7 @@
 package com.edgecut.oss;
 
+import org.springframework.beans.BeanUtils;
+
 import java.io.*;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,6 +35,13 @@ public class DownloadTask {
         finishCnt = new AtomicInteger();
         finish = false;
         closed = false;
+    }
+
+    public DownloadTask toOutput(){
+        DownloadTask that = new DownloadTask();
+        BeanUtils.copyProperties(this, that);
+        that.setZipOutputStream(null);
+        return that;
     }
 
     public Date getStartTime() {

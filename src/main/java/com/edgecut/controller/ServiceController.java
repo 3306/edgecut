@@ -68,13 +68,13 @@ public class ServiceController {
         DownloadTask downloadTask = edgeCutService.batchDownload(prefix);
         downloadTask.setTargetUrl(ossUrl + downloadTask.getTargetUrl());
         downloadCache.put(downloadTask.getTargetUrl(), downloadTask);
-        return downloadTask;
+        return downloadTask.toOutput();
     }
 
     @RequestMapping("/downloadStatus")
     @ResponseBody
     public DownloadTask downloadStatus(@RequestParam("key") String key) throws ExecutionException {
-        return downloadCache.get(key, DownloadTask::new);
+        return downloadCache.get(key, DownloadTask::new).toOutput();
     }
 
     @RequestMapping("/stsUpload")
