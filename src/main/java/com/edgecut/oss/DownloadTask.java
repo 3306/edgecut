@@ -1,5 +1,6 @@
 package com.edgecut.oss;
 
+import com.edgecut.entity.CutDataDO;
 import org.springframework.beans.BeanUtils;
 
 import java.io.*;
@@ -112,12 +113,12 @@ public class DownloadTask {
         }
     }
 
-    public void tryClose(String key) {
+    public void tryClose(CutDataDO cutDataDO) {
         if (closed){
             return;
         }
 
-        int fc = key == null ? finishCnt.get() : finishCnt.incrementAndGet();
+        int fc = cutDataDO == null ? finishCnt.get() : finishCnt.incrementAndGet();
 
         if (finish) {
             synchronized (this) {

@@ -20,13 +20,13 @@ public class OssUtil {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
-    public String getEndpoint() {
-        return endpoint;
-    }
-
-    public String getBucketName() {
-        return bucketName;
-    }
+//    public String getEndpoint() {
+//        return endpoint;
+//    }
+//
+//    public String getBucketName() {
+//        return bucketName;
+//    }
 
     public ObjectListing ls(String prefix, String nextMarker, int maxKeys){
         ListObjectsRequest request = new ListObjectsRequest(bucketName)
@@ -34,20 +34,20 @@ public class OssUtil {
         return ossClient.listObjects(request);
     }
 
-    public ObjectMetadata getMetaData(String key){
-        return ossClient.getObjectMetadata(bucketName, key);
-    }
+//    public ObjectMetadata getMetaData(String key){
+//        return ossClient.getObjectMetadata(bucketName, key);
+//    }
 
-    public void addMetaData(String key, String k, String v){
-        ObjectMetadata objectMetadata = getMetaData(key);
-        objectMetadata.addUserMetadata(k, v);
-
-        CopyObjectRequest copyObjectRequest = new CopyObjectRequest(bucketName, key, bucketName, key);
-        copyObjectRequest.setNewObjectMetadata(objectMetadata);
-
-        CopyObjectResult copyObjectResult = ossClient.copyObject(copyObjectRequest);
-        logger.info("addMetaData key={} k={} v={} etag={} lastModified={}", key, k, v, copyObjectResult.getETag(), copyObjectResult.getLastModified());
-    }
+//    public void addMetaData(String key, String k, String v){
+//        ObjectMetadata objectMetadata = getMetaData(key);
+//        objectMetadata.addUserMetadata(k, v);
+//
+//        CopyObjectRequest copyObjectRequest = new CopyObjectRequest(bucketName, key, bucketName, key);
+//        copyObjectRequest.setNewObjectMetadata(objectMetadata);
+//
+//        CopyObjectResult copyObjectResult = ossClient.copyObject(copyObjectRequest);
+//        logger.info("addMetaData key={} k={} v={} etag={} lastModified={}", key, k, v, copyObjectResult.getETag(), copyObjectResult.getLastModified());
+//    }
 
     public List<String> getBaseDir(){
         ListObjectsRequest listObjectsRequest = new ListObjectsRequest(bucketName);
@@ -60,5 +60,9 @@ public class OssUtil {
         GetObjectRequest request = new GetObjectRequest(bucketName, key);
         request.setProcess(style);
         return ossClient.getObject(request, file);
+    }
+
+    public static String getPrefix(String key){
+        return key.substring(0, key.indexOf('/') + 1);
     }
 }

@@ -2,6 +2,8 @@ package com.edgecut.service;
 
 import com.aliyun.oss.model.OSSObjectSummary;
 import com.aliyun.oss.model.ObjectListing;
+import com.edgecut.entity.CutDataDO;
+import com.edgecut.mapper.CutDataMapper;
 import com.edgecut.oss.DownloadTask;
 import com.edgecut.oss.OssUtil;
 import org.apache.commons.lang.StringUtils;
@@ -23,6 +25,8 @@ public class EdgeCutService {
     private String executor;
     @Resource
     private OssUtil ossUtil;
+    @Resource
+    private CutDataMapper cutDataMapper;
 
     private String ossDir = System.getProperty("ossDir");
 
@@ -45,14 +49,14 @@ public class EdgeCutService {
                 if (objectSummary.getKey().equals(prefix)){
                     continue;
                 }
-                runAsync(objectSummary.getKey());
+                runAsync(prefix, objectSummary.getKey());
                 cnt ++;
             }
         } while (ls.isTruncated());
         return cnt;
     }
 
-    public void runSync(String filePath){
+    public void runSync(String prefix, String filePath){
         String diskFilePath = ossDir + "/" + filePath;
         try {
             List<Integer> result = work(diskFilePath);
@@ -60,25 +64,37 @@ public class EdgeCutService {
                 logger.error("work failed. filePath = {}", filePath);
                 return;
             }
-            String edge = String.format("%d/%d/%d/%d", result.get(0), result.get(1), result.get(2), result.get(3));
-            ossUtil.addMetaData(filePath, "edge", edge);
-            ossUtil.addMetaData(filePath, "cutstatus", "0");
+            CutDataDO cutDataDO = new CutDataDO();
+            cutDataDO.setKey(filePath);
+            cutDataDO.setPrefix(prefix);
+            cutDataDO.setX(result.get(0));
+            cutDataDO.setY(result.get(1));
+            cutDataDO.setW(result.get(2));
+            cutDataDO.setH(result.get(3));
+            cutDataDO.setStatus(1);
+            cutDataDO.setDeleteMark(0);
+            cutDataMapper.save(cutDataDO);
+//            String edge = String.format("%d/%d/%d/%d", result.get(0), result.get(1), result.get(2), result.get(3));
+//            ossUtil.addMetaData(filePath, "edge", edge);
+//            ossUtil.addMetaData(filePath, "cutstatus", "0");
         } catch (Throwable e) {
             logger.error("work error. filePath = {}", filePath, e);
         }
     }
 
-    public void runAsync(String filePath){
-        threadPoolExecutor.execute(() -> runSync(filePath));
+    public void runAsync(String prefix, String filePath){
+        threadPoolExecutor.execute(() -> runSync(prefix, filePath));
     }
 
     private List<Integer> work(String filePath) throws IOException {
         String commandStr = executor;
         logger.info("command : {}", commandStr);
         Process p = Runtime.getRuntime().exec(commandStr);
-        try (OutputStream outputStream = p.getOutputStream()) {
-            outputStream.write((filePath+"\n").getBytes());
-            outputStream.flush();
+        if (!commandStr.startsWith("echo")) {
+            try (OutputStream outputStream = p.getOutputStream()) {
+                outputStream.write((filePath + "\n").getBytes());
+                outputStream.flush();
+            }
         }
 
         Scanner scanner = new Scanner(p.getInputStream());
@@ -132,53 +148,58 @@ public class EdgeCutService {
     //下载
 
     public DownloadTask batchDownload(String prefix){
-        ObjectListing objectListing;
-        String nextMarker = null;
+//        ObjectListing objectListing;
+//        String nextMarker = null;
         String fileName = String.format("%s-%d.zip", prefix.replace("/", ""), System.currentTimeMillis());
         DownloadTask downloadTask = new DownloadTask(ossDir + "/" + fileName);
         downloadTask.setTargetUrl(fileName);
-        do {
-            objectListing = ossUtil.ls(prefix, nextMarker, 10);
-            for (OSSObjectSummary summary : objectListing.getObjectSummaries()) {
-                if (prefix.equals(summary.getKey())){
-                    continue;
-                }
-                downloadTask.getAllCnt().incrementAndGet();
-                downloadAsync(downloadTask, summary.getKey());
-            }
-            nextMarker = objectListing.getNextMarker();
-        } while (objectListing.isTruncated());
+
+        CutDataDO queryDO = new CutDataDO();
+        queryDO.setPrefix(prefix);
+        List<CutDataDO> cutDataDOS = cutDataMapper.query(queryDO);
+        for (CutDataDO cutDataDO : cutDataDOS) {
+            downloadTask.getAllCnt().incrementAndGet();
+            downloadAsync(downloadTask, cutDataDO);
+        }
         downloadTask.setFinish(true);
         downloadAsync(downloadTask, null);
+
+//        do {
+//            objectListing = ossUtil.ls(prefix, nextMarker, 10);
+//            for (OSSObjectSummary summary : objectListing.getObjectSummaries()) {
+//                if (prefix.equals(summary.getKey())){
+//                    continue;
+//                }
+//                downloadTask.getAllCnt().incrementAndGet();
+//                downloadAsync(downloadTask, summary.getKey());
+//            }
+//            nextMarker = objectListing.getNextMarker();
+//        } while (objectListing.isTruncated());
+//        downloadTask.setFinish(true);
+//        downloadAsync(downloadTask, null);
         return downloadTask;
     }
 
-    public void downloadSync(DownloadTask downloadTask, String key){
+    public void downloadSync(DownloadTask downloadTask, CutDataDO cutDataDO){
         try {
-            if (key == null){
+            if (cutDataDO == null){
                 return;
             }
-            String edge = ossUtil.getMetaData(key).getUserMetadata().get("edge");
-            if (StringUtils.isBlank(edge)) {
+            if (cutDataDO.getStatus() == 0) {
                 return;
             }
-            String[] split = edge.split("/");
-            if (split.length != 4) {
-                return;
-            }
-
-            int x = Integer.valueOf(split[0]);
-            int y = Integer.valueOf(split[1]);
-            int w = Integer.valueOf(split[2]);
-            int h = Integer.valueOf(split[3]);
+            int x = cutDataDO.getX();
+            int y = cutDataDO.getY();
+            int w = cutDataDO.getW();
+            int h = cutDataDO.getH();
             String style = String.format("image/crop,x_%d,y_%d,w_%d,h_%d", x, y, w, h);
-            download(downloadTask, key, style);
+            download(downloadTask, cutDataDO.getKey(), style);
         } catch (Exception e){
-            logger.error("download error. key = {}", key, e);
+            logger.error("download error. cutDataDO = {}", cutDataDO, e);
         } finally {
-            downloadTask.tryClose(key);
-            logger.info("download report: key = {} allFile = {} finishFile = {} finish = {}",
-                    key,
+            downloadTask.tryClose(cutDataDO);
+            logger.info("download report: cutDataDO = {} allFile = {} finishFile = {} finish = {}",
+                    cutDataDO,
                     downloadTask.getAllCnt(),
                     downloadTask.getFinishCnt(),
                     downloadTask.getFinish());
@@ -186,8 +207,8 @@ public class EdgeCutService {
 
     }
 
-    public void downloadAsync(DownloadTask downloadTask, String key){
-        threadPoolExecutor.execute(() -> downloadSync(downloadTask, key));
+    public void downloadAsync(DownloadTask downloadTask, CutDataDO cutDataDO){
+        threadPoolExecutor.execute(() -> downloadSync(downloadTask, cutDataDO));
     }
 
     private void download(DownloadTask downloadTask, String key, String style) throws IOException {

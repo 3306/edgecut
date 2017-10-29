@@ -25,7 +25,7 @@ public class DemoApplicationTests {
 
 	@Test
 	public void testEdgeCut() throws InterruptedException {
-		edgeCutService.runAsync("test/047.tif");
+		edgeCutService.runAsync("test/", "test/047.tif");
 		Thread.sleep(10000000L);
 	}
 

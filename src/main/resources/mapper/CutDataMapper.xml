@@ -9,21 +9,40 @@
         gmt_create as gmtCreate, gmt_modified as gmtModified, delete_mark as deleteMark
     </sql>
 
-    <!--<sql id="queryWhere">-->
-        <!--delete_mark = 0-->
-        <!--<if test="name != null">and name like concat('%',#{name},'%') </if>-->
-        <!--<if test="appType != null">and app_type = #{appType} </if>-->
-        <!--<if test="status != null">and status = #{status} </if>-->
-        <!--<if test="id != null">and id = #{id} </if>-->
-        <!--<if test="code != null">and code = #{code} </if>-->
-        <!--<if test="type != null">and type = #{type} </if>-->
-        <!--<if test="style != null">and feature like concat('%',#{style},'%') </if>-->
-    <!--</sql>-->
-
     <select id="query" resultType="CutDataDO">
         select
         <include refid="allFields"/>
         from cut_data
+        where delete_mark = 0
+        <if test="prefix != null">
+            and prefix = #{prefix}
+        </if>
     </select>
+
+    <select id="countStatus" resultType="CutDataCountDO">
+        select
+          prefix, status, count(1) as count
+        from cut_data
+        where
+          delete_mark = 0
+          <if test="prefix != null">
+            prefix = #{prefix}
+          </if>
+        group by prefix, status
+    </select>
+
+    <insert id="save">
+        insert into cut_data(`key`, prefix, status, x, y, w, h,gmt_create, gmt_modified, delete_mark)
+        VALUES
+        (#{key}, #{prefix}, #{status}, #{x}, #{y}, #{w}, #{h}, now(), now(), #{deleteMark})
+        ON DUPLICATE KEY UPDATE
+        status = #{status},
+        x = #{x},
+        y = #{y},
+        w = #{w},
+        h = #{h},
+        gmt_modified=now(),
+        delete_mark = #{deleteMark}
+    </insert>
 
 </mapper>

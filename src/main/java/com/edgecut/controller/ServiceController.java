@@ -1,41 +1,41 @@
 package com.edgecut.controller;
 
+import com.aliyun.oss.model.OSSObjectSummary;
+import com.edgecut.entity.CutDataDO;
+import com.edgecut.mapper.CutDataMapper;
 import com.edgecut.oss.CutResult;
 import com.edgecut.oss.DownloadTask;
 import com.edgecut.oss.OssUtil;
 import com.edgecut.service.EdgeCutService;
 import com.edgecut.service.StsService;
 import com.aliyun.oss.model.ObjectListing;
-import com.aliyun.oss.model.ObjectMetadata;
 import com.aliyuncs.sts.model.v20150401.AssumeRoleResponse;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.LoadingCache;
-import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/service")
-public class ServiceController {
+public class ServiceController{
     @Resource
     private EdgeCutService edgeCutService;
     @Resource
     private OssUtil ossUtil;
     @Resource
     private StsService stsService;
+    @Resource
+    private CutDataMapper cutDataMapper;
 
     private String ossUrl = "http://edgecut.oss-cn-shanghai.aliyuncs.com/";
 
@@ -46,7 +46,7 @@ public class ServiceController {
 
     @RequestMapping("/run")
     @ResponseBody
-    public int batchRun(@RequestParam("prefix")String prefix){
+    public int batchRun(@RequestParam("prefix") String prefix){
         if (!prefix.endsWith("/")){
             prefix = prefix + "/";
         }
@@ -57,6 +57,37 @@ public class ServiceController {
     @ResponseBody
     public List<String> baseDir(){
         return ossUtil.getBaseDir();
+    }
+
+    @RequestMapping("/dirCount")
+    @ResponseBody
+    public Map<String, AtomicInteger> dirCount(@RequestParam("prefix") String prefix){
+        if (!prefix.endsWith("/")){
+            prefix = prefix + "/";
+        }
+        CutDataDO queryDO = new CutDataDO();
+        queryDO.setPrefix(prefix);
+        List<CutDataDO> cutDataCountDOS = cutDataMapper.query(queryDO);
+        Map<String, AtomicInteger> count = new HashMap<>();
+        Set<String> keys = new HashSet<>();
+        for (CutDataDO cutDataDO : cutDataCountDOS) {
+            keys.add(cutDataDO.getKey());
+            count.computeIfAbsent("step-"+cutDataDO.getStatus(), str -> new AtomicInteger()).incrementAndGet();
+        }
+
+        //TODO 翻页处理
+        ObjectListing ls = ossUtil.ls(prefix, null, 1000);
+        for (OSSObjectSummary ossObjectSummary : ls.getObjectSummaries()) {
+            if (keys.contains(ossObjectSummary.getKey())){
+                continue;
+            }
+            if (ossObjectSummary.getKey().equals(prefix)){
+                continue;
+            }
+            count.computeIfAbsent("step-0" , str -> new AtomicInteger()).incrementAndGet();
+        }
+
+        return count;
     }
 
     @RequestMapping("/download")
@@ -89,11 +120,12 @@ public class ServiceController {
         return null;
     }
 
-    @RequestMapping("/reject")
-    @ResponseBody
-    public void reject(@RequestParam("key") String key){
-        ossUtil.addMetaData(key, "cutstatus", "-1");
-    }
+//    @RequestMapping("/reject")
+//    @ResponseBody
+//    @Override
+//    public void reject(@RequestParam("key") String key){
+//        ossUtil.addMetaData(key, "cutstatus", "-1");
+//    }
 
     @RequestMapping("/update")
     @ResponseBody
@@ -102,47 +134,42 @@ public class ServiceController {
                        @RequestParam("y") String y,
                        @RequestParam("w") String w,
                        @RequestParam("h") String h){
-        String edge = String.format("%d/%d/%d/%d", Integer.valueOf(x), Integer.valueOf(y), Integer.valueOf(w), Integer.valueOf(h));
-        ossUtil.addMetaData(key, "edge", edge);
-        ossUtil.addMetaData(key, "cutstatus", "1");
+        String prefix = OssUtil.getPrefix(key);
+        CutDataDO cutDataDO = new CutDataDO();
+        cutDataDO.setPrefix(prefix);
+        cutDataDO.setKey(key);
+        cutDataDO.setX(Integer.valueOf(x));
+        cutDataDO.setY(Integer.valueOf(y));
+        cutDataDO.setW(Integer.valueOf(w));
+        cutDataDO.setH(Integer.valueOf(h));
+        cutDataDO.setStatus(2);
+        cutDataDO.setDeleteMark(0);
+        cutDataMapper.save(cutDataDO);
     }
 
     @RequestMapping("/result")
     @ResponseBody
-    public Map<String, Object> getResult(@RequestParam("prefix")String prefixInput,
+    public Map<String, Object> getResult(@RequestParam("prefix") String prefixInput,
                                          @RequestParam(required = false, value = "next") String next,
                                          @RequestParam("count") String count){
         final String prefix = prefixInput.endsWith("/") ? prefixInput : prefixInput + "/";
-        ObjectListing ls = ossUtil.ls(prefix, next, Integer.valueOf(count));
-        Map<String, Object> data = new HashMap<>();
-        List<CutResult> edgeResults = ls.getObjectSummaries().stream().filter(ossObjectSummary -> !ossObjectSummary.getKey().equals(prefix)).map(ossObjectSummary -> {
-            CutResult cutResult = new CutResult(ossObjectSummary.getKey());
-            cutResult.setOriginDownloadUrl(ossUrl + ossObjectSummary.getKey());
-            cutResult.setOriginShowUrl(ossUrl + ossObjectSummary.getKey() + "?x-oss-process=image/format,webp/resize,w_800");
-            ObjectMetadata metaData = ossUtil.getMetaData(ossObjectSummary.getKey());
-            String edge = metaData.getUserMetadata().get("edge");
-            if (StringUtils.isNotBlank(edge)) {
-                String[] split = edge.split("/");
-                if (split.length == 4) {
-                    int x = Integer.valueOf(split[0]);
-                    int y = Integer.valueOf(split[1]);
-                    int w = Integer.valueOf(split[2]);
-                    int h = Integer.valueOf(split[3]);
-                    cutResult.setX(x);
-                    cutResult.setY(y);
-                    cutResult.setW(w);
-                    cutResult.setH(h);
-                    cutResult.setCutShowUrl(ossUrl + ossObjectSummary.getKey() + String.format("?x-oss-process=image/crop,x_%d,y_%d,w_%d,h_%d/format,webp/resize,w_800", x, y, w, h));
-                    cutResult.setCutDownloadUrl(ossUrl + ossObjectSummary.getKey() + String.format("?x-oss-process=image/crop,x_%d,y_%d,w_%d,h_%d", x, y, w, h));
-                }
-            }
-            cutResult.setStatus(metaData.getUserMetadata().get("cutstatus"));
+        CutDataDO queryDO = new CutDataDO();
+        queryDO.setPrefix(prefix);
+        List<CutDataDO> cutDataDOS = cutDataMapper.query(queryDO);
+        List<CutResult> cutResults = cutDataDOS.parallelStream().map(cutDataDO -> {
+            CutResult cutResult = new CutResult(cutDataDO.getKey());
+            cutResult.setOriginDownloadUrl(ossUrl + cutDataDO.getKey());
+            cutResult.setOriginShowUrl(ossUrl + cutDataDO.getKey() + "?x-oss-process=image/format,webp/resize,w_800");
+            cutResult.setX(cutDataDO.getX());
+            cutResult.setY(cutDataDO.getY());
+            cutResult.setW(cutDataDO.getW());
+            cutResult.setH(cutDataDO.getH());
+            cutResult.setCutShowUrl(ossUrl + cutDataDO.getKey() + String.format("?x-oss-process=image/crop,x_%d,y_%d,w_%d,h_%d/format,webp/resize,w_800", cutDataDO.getX(), cutDataDO.getY(), cutDataDO.getW(), cutDataDO.getH()));
+            cutResult.setCutDownloadUrl(ossUrl + cutDataDO.getKey() + String.format("?x-oss-process=image/crop,x_%d,y_%d,w_%d,h_%d", cutDataDO.getX(), cutDataDO.getY(), cutDataDO.getW(), cutDataDO.getH()));
             return cutResult;
         }).collect(Collectors.toList());
-        data.put("data", edgeResults);
-        if (ls.isTruncated()) {
-            data.put("next", ls.getNextMarker());
-        }
+        Map<String, Object> data = new HashMap<>();
+        data.put("data", cutResults);
         return data;
     }
 }
