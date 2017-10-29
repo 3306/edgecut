@@ -160,6 +160,7 @@ public class ServiceController{
             CutResult cutResult = new CutResult(cutDataDO.getKey());
             cutResult.setOriginDownloadUrl(ossUrl + cutDataDO.getKey());
             cutResult.setOriginShowUrl(ossUrl + cutDataDO.getKey() + "?x-oss-process=image/format,webp/resize,w_800");
+            cutResult.setStatus(cutDataDO.getStatus());
             cutResult.setX(cutDataDO.getX());
             cutResult.setY(cutDataDO.getY());
             cutResult.setW(cutDataDO.getW());

@@ -7,7 +7,7 @@ public class CutResult {
     private String cutShowUrl;
     private String cutDownloadUrl;
     private Integer x,y,w,h;
-    private String status;
+    private Integer status;
 
     public CutResult(String key) {
         this.key = key;
@@ -85,11 +85,11 @@ public class CutResult {
         this.key = key;
     }
 
-    public String getStatus() {
+    public Integer getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(Integer status) {
         this.status = status;
     }
 }

@@ -1,5 +1,6 @@
 (($)=>{
-
+    let host = "";
+    // let host = "//101.132.181.91";
     let list = $('#list');
     let fixedList = $('#fixedList');
     let getId = (key)=>{
@@ -23,7 +24,7 @@
         return new Promise((resolve)=>{
             $.ajax(
                 {
-                    url:'//101.132.181.91/service/result',
+                    url: host + '/service/result',
                     data:{
                         prefix:search.get('prefix') || "1",
                         count:search.get('count') || "10"
@@ -32,15 +33,15 @@
                     success:(res)=>{
                         // console.log (res.data);
                         let result = res.data.filter((item)=>{
-                            return item.status === '0';
+                            return item.status === 1;
                         }).map((item)=>{
                             return listItemTemplate(item.originDownloadUrl+'?x-oss-process=image/format,jpg/quality,q_20',item.key);
                         }).join('');
                         let fixedResult = res.data.filter((item)=>{
-                            return item.status === '1';
+                            return item.status === 2;
                         }).map((item)=>{
                             return listItemTemplate(item.originDownloadUrl+'?x-oss-process=image/format,jpg/quality,q_20',item.key);
-                        })
+                        }).join('');
                         // console.log (result);
                         // list.append(result)
                         list.html(result);
@@ -74,7 +75,7 @@
             let originKey = e.target.dataset.originkey;
             let current = all[key].tellSelect ();
             $.ajax({
-                url:'http://101.132.181.91/service/update',
+                url: host + '/service/update',
                 data:{
                     key:originKey,
                     x:Math.round(current.x),
