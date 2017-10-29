@@ -117,7 +117,7 @@ window.onload = function(){
                     stsToken: creds.securityToken,
                     bucket: bucket
                 });
-
+                console.log(client);
                 return func(client);
             });
         };
@@ -132,7 +132,6 @@ window.onload = function(){
         };
 
         var uploadFile = function (client) {
-            debugger
             let files = document.getElementById('file').files;
             for(let i=0;i<files.length;i++){
                 let key = files[i].webkitRelativePath;

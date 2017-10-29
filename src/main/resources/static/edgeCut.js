@@ -8,7 +8,7 @@
     let search = new URL(window.location.href).searchParams;
     let all = {};
     let listItemTemplate = (imgUrl,key)=>{
-        return `    <div class="col-xs-4">
+        return `    <div class="col-xs-6">
     <div class="my-thumbnail">
       <img id="${getId(key)}" src="${imgUrl}" alt="123121323">
       <div class="caption">
@@ -47,7 +47,8 @@
                         fixedList.html(fixedResult);
                         res.data.forEach((item)=>{
                             $(`#${getId(item.key)}`).Jcrop({
-                                boxWidth:window.screen.width/3 -20
+                                boxWidth:window.screen.width/2 -20,
+                                allowSelect:false
                             },function () {
                                 // this.setSelect([100,100,200,150],function (a) {
                                 //     console.log ('123132');
@@ -84,7 +85,14 @@
                 dataType:'jsonp',
                 success:(res)=>{
                     $.jGrowl('修改成功');
-                    fetchPic();
+                    // console.log($(e.target).parents('.col-xs-4'));
+
+                    if ($(e.target).parents('#home').length === 1) {
+                        $('body').find('#profile #fixedList').append(`<div class="col-xs-6">
+                        ${$(e.target).parents('.col-xs-6').html()}
+                        </div>`);
+                        $(e.target).parents('.col-xs-6').remove();
+                    }
                 }
             })
         });
