@@ -1,6 +1,6 @@
 (($)=>{
-    let host = "";
-    // let host = "//101.132.181.91";
+    // let host = "";
+    let host = "//101.132.181.91";
     let list = $('#list');
     let fixedList = $('#fixedList');
     let getId = (key)=>{
