@@ -47,7 +47,8 @@
                         fixedList.html(fixedResult);
                         res.data.forEach((item)=>{
                             $(`#${getId(item.key)}`).Jcrop({
-                                boxWidth:window.screen.width/3 -20
+                                boxWidth:window.screen.width/3 -20,
+                                allowSelect:false
                             },function () {
                                 // this.setSelect([100,100,200,150],function (a) {
                                 //     console.log ('123132');
@@ -84,7 +85,14 @@
                 dataType:'jsonp',
                 success:(res)=>{
                     $.jGrowl('修改成功');
-                    fetchPic();
+                    // console.log($(e.target).parents('.col-xs-4'));
+
+                    if ($(e.target).parents('#home').length === 1) {
+                        $('body').find('#profile #fixedList').append(`<div class="col-xs-4">
+                        ${$(e.target).parents('.col-xs-4').html()}
+                        </div>`);
+                        $(e.target).parents('.col-xs-4').remove();
+                    }
                 }
             })
         });
