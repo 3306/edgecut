@@ -1,12 +1,16 @@
-package com.controller;
+package com.edgecut.controller;
 
-import com.CutResult;
-import com.EdgeCutService;
-import com.OssUtil;
-import com.StsService;
+import com.edgecut.oss.CutResult;
+import com.edgecut.oss.DownloadTask;
+import com.edgecut.oss.OssUtil;
+import com.edgecut.service.EdgeCutService;
+import com.edgecut.service.StsService;
 import com.aliyun.oss.model.ObjectListing;
 import com.aliyun.oss.model.ObjectMetadata;
 import com.aliyuncs.sts.model.v20150401.AssumeRoleResponse;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.LoadingCache;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,6 +21,10 @@ import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Controller
@@ -30,6 +38,11 @@ public class ServiceController {
     private StsService stsService;
 
     private String ossUrl = "http://edgecut.oss-cn-shanghai.aliyuncs.com/";
+
+    private Map<String, DownloadTask> downloadTaskMap = new ConcurrentHashMap<>();
+
+    private Cache<String, DownloadTask> downloadCache = CacheBuilder.newBuilder()
+            .expireAfterWrite(30, TimeUnit.MINUTES).build();
 
     @RequestMapping("/run")
     @ResponseBody
@@ -47,8 +60,21 @@ public class ServiceController {
     }
 
     @RequestMapping("/download")
-    public String download(@RequestParam("prefix") String prefix){
-        return ossUrl + "/" + edgeCutService.batchDownload(prefix);
+    @ResponseBody
+    public DownloadTask download(@RequestParam("prefix") String prefix){
+        if (!prefix.endsWith("/")){
+            prefix = prefix + "/";
+        }
+        DownloadTask downloadTask = edgeCutService.batchDownload(prefix);
+        downloadTask.setTargetUrl(ossUrl + downloadTask.getTargetUrl());
+        downloadCache.put(downloadTask.getTargetUrl(), downloadTask);
+        return downloadTask.toOutput();
+    }
+
+    @RequestMapping("/downloadStatus")
+    @ResponseBody
+    public DownloadTask downloadStatus(@RequestParam("key") String key) throws ExecutionException {
+        return downloadCache.get(key, DownloadTask::new).toOutput();
     }
 
     @RequestMapping("/stsUpload")

@@ -1,21 +1,31 @@
-package com;
+package com.edgecut.oss;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 
 import java.io.*;
+import java.util.Date;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class DownloadTask {
+
+    private Date startTime;
     private ZipOutputStream zipOutputStream;
     private AtomicInteger allCnt;
     private AtomicInteger finishCnt;
+    //任务生产结束，allCnt不再增长
     private Boolean finish;
+    //任务消费结束，打包完成，可以下载
     private Boolean closed;
+    private String targetUrl;
+
+    public DownloadTask() {
+
+    }
 
     public DownloadTask(String fileName) {
+        startTime = new Date();
         try {
             this.zipOutputStream = new ZipOutputStream(new FileOutputStream(fileName));
         } catch (FileNotFoundException e) {
@@ -25,6 +35,21 @@ public class DownloadTask {
         finishCnt = new AtomicInteger();
         finish = false;
         closed = false;
+    }
+
+    public DownloadTask toOutput(){
+        DownloadTask that = new DownloadTask();
+        BeanUtils.copyProperties(this, that);
+        that.setZipOutputStream(null);
+        return that;
+    }
+
+    public Date getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(Date startTime) {
+        this.startTime = startTime;
     }
 
     public ZipOutputStream getZipOutputStream() {
@@ -57,6 +82,22 @@ public class DownloadTask {
 
     public void setFinish(Boolean finish) {
         this.finish = finish;
+    }
+
+    public Boolean getClosed() {
+        return closed;
+    }
+
+    public void setClosed(Boolean closed) {
+        this.closed = closed;
+    }
+
+    public String getTargetUrl() {
+        return targetUrl;
+    }
+
+    public void setTargetUrl(String targetUrl) {
+        this.targetUrl = targetUrl;
     }
 
     public synchronized void nextEntry(String fileName, File file) throws IOException {

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.edgecut.mapper.CutDataMapper">
+
+    <sql id="allFields">
+        id, `key`, prefix, status, x, y, w, h,
+        gmt_create as gmtCreate, gmt_modified as gmtModified, delete_mark as deleteMark
+    </sql>
+
+    <!--<sql id="queryWhere">-->
+        <!--delete_mark = 0-->
+        <!--<if test="name != null">and name like concat('%',#{name},'%') </if>-->
+        <!--<if test="appType != null">and app_type = #{appType} </if>-->
+        <!--<if test="status != null">and status = #{status} </if>-->
+        <!--<if test="id != null">and id = #{id} </if>-->
+        <!--<if test="code != null">and code = #{code} </if>-->
+        <!--<if test="type != null">and type = #{type} </if>-->
+        <!--<if test="style != null">and feature like concat('%',#{style},'%') </if>-->
+    <!--</sql>-->
+
+    <select id="query" resultType="CutDataDO">
+        select
+        <include refid="allFields"/>
+        from cut_data
+    </select>
+
+</mapper>

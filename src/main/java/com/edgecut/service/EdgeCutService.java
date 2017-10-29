@@ -1,7 +1,9 @@
-package com;
+package com.edgecut.service;
 
 import com.aliyun.oss.model.OSSObjectSummary;
 import com.aliyun.oss.model.ObjectListing;
+import com.edgecut.oss.DownloadTask;
+import com.edgecut.oss.OssUtil;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,8 +15,6 @@ import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 @Service
 public class EdgeCutService {
@@ -37,7 +37,7 @@ public class EdgeCutService {
         ObjectListing ls;
         int cnt = 0;
         do {
-            ls = ossUtil.ls(prefix, next, 1);
+            ls = ossUtil.ls(prefix, next, 10);
             next = ls.getNextMarker();
 
             List<OSSObjectSummary> objectSummaries = ls.getObjectSummaries();
@@ -73,8 +73,14 @@ public class EdgeCutService {
     }
 
     private List<Integer> work(String filePath) throws IOException {
-        String commandStr = executor + " " + filePath;
+        String commandStr = executor;
+        logger.info("command : {}", commandStr);
         Process p = Runtime.getRuntime().exec(commandStr);
+        try (OutputStream outputStream = p.getOutputStream()) {
+            outputStream.write((filePath+"\n").getBytes());
+            outputStream.flush();
+        }
+
         Scanner scanner = new Scanner(p.getInputStream());
 
         String fileName = null;
@@ -101,8 +107,16 @@ public class EdgeCutService {
             cnt ++;
         }
 
+        scanner.close();
+
         if (cnt != 5){
-            logger.error("executor failed. filePath = {}", filePath);
+            logger.error("executor failed. cnt = {} filePath = {}", cnt, filePath);
+            try (Scanner errScanner = new Scanner(p.getErrorStream())) {
+                while (errScanner.hasNext()){
+                    logger.warn("executor errMsg : {}", errScanner.nextLine());
+                }
+                logger.warn("executor errMsg finish");
+            }
             return null;
         }
 
@@ -117,12 +131,12 @@ public class EdgeCutService {
 
     //下载
 
-    public Integer batchDownload(String prefix){
+    public DownloadTask batchDownload(String prefix){
         ObjectListing objectListing;
         String nextMarker = null;
-        int cnt = 0;
-
-        DownloadTask downloadTask = new DownloadTask(ossDir + "/" + prefix.replace("/", "") + ".zip");
+        String fileName = String.format("%s-%d.zip", prefix.replace("/", ""), System.currentTimeMillis());
+        DownloadTask downloadTask = new DownloadTask(ossDir + "/" + fileName);
+        downloadTask.setTargetUrl(fileName);
         do {
             objectListing = ossUtil.ls(prefix, nextMarker, 10);
             for (OSSObjectSummary summary : objectListing.getObjectSummaries()) {
@@ -131,13 +145,12 @@ public class EdgeCutService {
                 }
                 downloadTask.getAllCnt().incrementAndGet();
                 downloadAsync(downloadTask, summary.getKey());
-                cnt ++;
             }
             nextMarker = objectListing.getNextMarker();
         } while (objectListing.isTruncated());
         downloadTask.setFinish(true);
         downloadAsync(downloadTask, null);
-        return cnt;
+        return downloadTask;
     }
 
     public void downloadSync(DownloadTask downloadTask, String key){
@@ -183,17 +196,4 @@ public class EdgeCutService {
         downloadTask.nextEntry(key.substring(key.indexOf("/") + 1), toZip);
     }
 
-    public static void main(String[] args) throws IOException {
-        ZipOutputStream zos = new ZipOutputStream(new FileOutputStream("test.zip"));
-        zos.putNextEntry(new ZipEntry("profile1"));
-        FileInputStream fis = new FileInputStream(".gitignore");
-        byte[] tmp = new byte[102400];
-        int t = 0;
-        while((t = fis.read(tmp)) != -1){
-            zos.write(tmp, 0, t);
-        }
-        fis.close();
-        zos.closeEntry();
-        zos.close();
-    }
 }
