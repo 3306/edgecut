@@ -1,41 +1,45 @@
 (($)=>{
-
+    let host = ""
+    // let host = "//101.132.181.91";
     let tbody = $('#mainTable');
     $.ajax({
-        url: 'http://101.132.181.91/service/baseDir',
+        url: host + '/service/baseDir',
         dataType: 'jsonp',
         success: (res) => {
             res.map((item) => {
                 let prefix = item.substr(0, item.length - 1);
                 fetchDetail(prefix).then((data)=>{
                     console.log(data);
-                    let fixed = [],unFixed = [],neverRun = [];
-                    data.data.forEach((jtem)=>{
-                        if (jtem.status === '0'){
-                            unFixed.push(jtem);
-                        }else if(jtem.status === '1'){
-                            fixed.push(item);
-                        }else if(jtem.status === null){
-                            neverRun.push(jtem)
-                        }
-                    });
+                    let fixed = data['step-2'] || 0;
+                    let unFixed = data['step-1'] || 0;
+                    let neverRun = data['step-0'] || 0;
+                    let all = fixed + unFixed + neverRun;
+                    // data.data.forEach((jtem)=>{
+                    //     if (jtem.status === '0'){
+                    //         unFixed.push(jtem);
+                    //     }else if(jtem.status === '1'){
+                    //         fixed.push(item);
+                    //     }else if(jtem.status === null){
+                    //         neverRun.push(jtem)
+                    //     }
+                    // });
                     let result = `<tr>
                         <td>
                             <a href="./edgeCut.html?prefix=${prefix}&count=1000">${item}</a>
                         </td>
                         <td>
-                            ${data.data.length}
+                            ${all}
                         </td>
                         <td>
-                            ${neverRun.length}
+                            ${neverRun}
                         </td><td>
-                            ${unFixed.length}
+                            ${unFixed}
                         </td><td>
-                            ${fixed.length}
+                            ${fixed}
                         </td>
                         <td>
-                            ${neverRun.length > 0 ? `<a class="btn btn-default run" data-key="${item.substr(0, item.length - 1)}">运行</a>` : ''}
-                            ${fixed.length === data.length ? `<a  class="btn btn-default download" data-key="${prefix}">下载</a>` : ''}
+                            ${neverRun > 0 ? `<a class="btn btn-default run" data-key="${item.substr(0, item.length - 1)}">运行</a>` : ''}
+                            ${fixed === all ? `<a  class="btn btn-default download" data-key="${prefix}">下载</a>` : ''}
                         </td>
                     </tr>`;
                     tbody.append(result);
@@ -46,14 +50,13 @@
 
     function fetchDetail(prefix) {
         return $.ajax({
-            url:'//101.132.181.91/service/result',
+            url: host + '/service/dirCount',
             data:{
-                prefix:prefix,
-                count:1000
+                prefix:prefix
             },
             dataType:'jsonp',
             success:(res)=>{
-               return res.data;
+               return res;
             }
         });
     }
@@ -61,7 +64,7 @@
 $('body').on('click','.run',(e)=>{
     let prefix = e.target.dataset.key;
 $.ajax({
-        url:'http://101.132.181.91/service/run',
+        url: host + '/service/run',
         data:{
             prefix
         },
@@ -76,7 +79,7 @@ window.onload = function(){
 
     var OSS = window.OSS;
     if(OSS){
-        var appServer = 'http://101.132.181.91/service/stsUpload';
+        var appServer = host + '/service/stsUpload';
         var bucket = 'edgecut';
         var region = 'oss-cn-shanghai';
 
