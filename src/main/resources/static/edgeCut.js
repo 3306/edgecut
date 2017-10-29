@@ -88,7 +88,7 @@
                     // console.log($(e.target).parents('.col-xs-4'));
 
                     if ($(e.target).parents('#home').length === 1) {
-                        $('body').find('#profile #fixedList').append(`<div class="col-xs-4">
+                        $('body').find('#profile #fixedList').append(`<div class="col-xs-6">
                         ${$(e.target).parents('.col-xs-6').html()}
                         </div>`);
                         $(e.target).parents('.col-xs-6').remove();
