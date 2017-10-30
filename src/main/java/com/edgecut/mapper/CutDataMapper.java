@@ -11,4 +11,5 @@ public interface CutDataMapper {
     List<CutDataDO> query(CutDataDO cutDataDO);
     List<CutDataCountDO> countStatus(CutDataDO cutDataDO);
     void save(CutDataDO cutDataDO);
+    void insertOrCancel(CutDataDO cutDataDO);
 }

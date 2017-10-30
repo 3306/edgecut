@@ -45,4 +45,12 @@
         delete_mark = #{deleteMark}
     </insert>
 
+    <insert id="insertOrCancel">
+        insert into cut_data(`key`, prefix, status, x, y, w, h,gmt_create, gmt_modified, delete_mark)
+        VALUES
+        (#{key}, #{prefix}, #{status}, #{x}, #{y}, #{w}, #{h}, now(), now(), #{deleteMark})
+        ON DUPLICATE KEY UPDATE
+        gmt_modified=now()
+    </insert>
+
 </mapper>

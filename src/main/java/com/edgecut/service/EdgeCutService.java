@@ -73,7 +73,7 @@ public class EdgeCutService {
             cutDataDO.setH(result.get(3));
             cutDataDO.setStatus(1);
             cutDataDO.setDeleteMark(0);
-            cutDataMapper.save(cutDataDO);
+            cutDataMapper.insertOrCancel(cutDataDO);
 //            String edge = String.format("%d/%d/%d/%d", result.get(0), result.get(1), result.get(2), result.get(3));
 //            ossUtil.addMetaData(filePath, "edge", edge);
 //            ossUtil.addMetaData(filePath, "cutstatus", "0");
@@ -88,7 +88,7 @@ public class EdgeCutService {
 
     private List<Integer> work(String filePath) throws IOException {
         String commandStr = executor;
-        logger.info("command : {}", commandStr);
+        logger.info("command : {} file : {}", commandStr, filePath);
         Process p = Runtime.getRuntime().exec(commandStr);
         if (!commandStr.startsWith("echo")) {
             try (OutputStream outputStream = p.getOutputStream()) {
