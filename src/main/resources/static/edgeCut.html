@@ -43,9 +43,15 @@
 
     <!-- Tab panes -->
     <div class="tab-content">
-        <div role="tabpanel" class="tab-pane active" id="home"><div id="list" class="row"></div></div>
+        <div role="tabpanel" class="tab-pane active" id="home">
+            <div id="list" class="row"></div>
+        </div>
         <div role="tabpanel" class="tab-pane" id="profile">
             <div id="fixedList" class="row"></div>
+            <ul class="pager">
+                <li><a data-action="prev">上一页</a></li>
+                <li><a data-action="next">下一页</a></li>
+            </ul>
         </div>
     </div>
 

@@ -1,8 +1,12 @@
-.col-xs-4 {
+.col-xs-12 {
     margin-bottom: 40px;
 }
 
 .caption {
     margin-top: 10px;
 
+}
+
+.jcrop-holder {
+    margin:0 auto 0 auto;
 }
