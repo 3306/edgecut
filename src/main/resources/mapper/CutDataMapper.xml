@@ -17,18 +17,25 @@
         <if test="prefix != null">
             and prefix = #{prefix}
         </if>
+        <if test="status != null">
+            and status = #{status}
+        </if>
+        <if test="offset != null">
+            limit #{offset}, #{pageSize}
+        </if>
     </select>
 
-    <select id="countStatus" resultType="CutDataCountDO">
+    <select id="count" resultType="java.lang.Integer">
         select
-          prefix, status, count(1) as count
+            count(1)
         from cut_data
-        where
-          delete_mark = 0
-          <if test="prefix != null">
-            prefix = #{prefix}
-          </if>
-        group by prefix, status
+        where delete_mark = 0
+        <if test="prefix != null">
+            and prefix = #{prefix}
+        </if>
+        <if test="status != null">
+            and status = #{status}
+        </if>
     </select>
 
     <insert id="save">

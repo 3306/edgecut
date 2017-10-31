@@ -2,6 +2,7 @@ package com.edgecut.controller;
 
 import com.aliyun.oss.model.OSSObjectSummary;
 import com.edgecut.entity.CutDataDO;
+import com.edgecut.entity.CutDataQTO;
 import com.edgecut.mapper.CutDataMapper;
 import com.edgecut.oss.CutResult;
 import com.edgecut.oss.DownloadTask;
@@ -65,9 +66,9 @@ public class ServiceController{
         if (!prefix.endsWith("/")){
             prefix = prefix + "/";
         }
-        CutDataDO queryDO = new CutDataDO();
-        queryDO.setPrefix(prefix);
-        List<CutDataDO> cutDataCountDOS = cutDataMapper.query(queryDO);
+        CutDataQTO cutDataQTO = new CutDataQTO();
+        cutDataQTO.setPrefix(prefix);
+        List<CutDataDO> cutDataCountDOS = cutDataMapper.query(cutDataQTO);
         Map<String, AtomicInteger> count = new HashMap<>();
         Set<String> keys = new HashSet<>();
         for (CutDataDO cutDataDO : cutDataCountDOS) {
@@ -150,12 +151,20 @@ public class ServiceController{
     @RequestMapping("/result")
     @ResponseBody
     public Map<String, Object> getResult(@RequestParam("prefix") String prefixInput,
-                                         @RequestParam(required = false, value = "next") String next,
-                                         @RequestParam("count") String count){
+                                         @RequestParam(required = false, value = "currentPage", defaultValue = "1") String currentPage,
+                                         @RequestParam(required = false, value = "pageSize", defaultValue = "50") String pageSize,
+                                         @RequestParam(required = false, value = "status") String status
+                                         ){
         final String prefix = prefixInput.endsWith("/") ? prefixInput : prefixInput + "/";
-        CutDataDO queryDO = new CutDataDO();
-        queryDO.setPrefix(prefix);
-        List<CutDataDO> cutDataDOS = cutDataMapper.query(queryDO);
+        CutDataQTO cutDataQTO = new CutDataQTO();
+        cutDataQTO.setPrefix(prefix);
+        cutDataQTO.setCurrentPage(Integer.valueOf(currentPage));
+        cutDataQTO.setPageSize(Integer.valueOf(pageSize));
+        if (status != null){
+            cutDataQTO.setStatus(Integer.valueOf(status));
+        }
+        List<CutDataDO> cutDataDOS = cutDataMapper.query(cutDataQTO);
+        Integer count = cutDataMapper.count(cutDataQTO);
         List<CutResult> cutResults = cutDataDOS.parallelStream().map(cutDataDO -> {
             CutResult cutResult = new CutResult(cutDataDO.getKey());
             cutResult.setOriginDownloadUrl(ossUrl + cutDataDO.getKey());
@@ -171,6 +180,7 @@ public class ServiceController{
         }).collect(Collectors.toList());
         Map<String, Object> data = new HashMap<>();
         data.put("data", cutResults);
+        data.put("count", count);
         return data;
     }
 }
