@@ -5,9 +5,9 @@ import com.aliyun.oss.model.ObjectListing;
 import com.edgecut.entity.CutDataDO;
 import com.edgecut.entity.CutDataQTO;
 import com.edgecut.mapper.CutDataMapper;
+import com.edgecut.oss.CutTask;
 import com.edgecut.oss.DownloadTask;
 import com.edgecut.oss.OssUtil;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -37,10 +37,10 @@ public class EdgeCutService {
 
     //切图
 
-    public int batchRun(String prefix){
+    public CutTask batchRun(String prefix){
+        CutTask cutTask = new CutTask(prefix);
         String next = null;
         ObjectListing ls;
-        int cnt = 0;
         do {
             ls = ossUtil.ls(prefix, next, 10);
             next = ls.getNextMarker();
@@ -50,16 +50,24 @@ public class EdgeCutService {
                 if (objectSummary.getKey().equals(prefix)){
                     continue;
                 }
-                runAsync(prefix, objectSummary.getKey());
-                cnt ++;
+                runAsync(cutTask, objectSummary.getKey());
+                cutTask.getAllCnt().incrementAndGet();
             }
         } while (ls.isTruncated());
-        return cnt;
+        cutTask.setFinish(true);
+        return cutTask;
     }
 
-    public void runSync(String prefix, String filePath){
+    public void runSync(CutTask cutTask, String filePath){
         String diskFilePath = ossDir + "/" + filePath;
         try {
+            CutDataQTO cutDataQTO = new CutDataQTO();
+            cutDataQTO.setPrefix(cutTask.getPrefix());
+            cutDataQTO.setKey(filePath);
+            Integer count = cutDataMapper.count(cutDataQTO);
+            if (count > 0){
+                return;
+            }
             List<Integer> result = work(diskFilePath);
             if (result == null || result.size() != 4){
                 logger.error("work failed. filePath = {}", filePath);
@@ -67,7 +75,7 @@ public class EdgeCutService {
             }
             CutDataDO cutDataDO = new CutDataDO();
             cutDataDO.setKey(filePath);
-            cutDataDO.setPrefix(prefix);
+            cutDataDO.setPrefix(cutTask.getPrefix());
             cutDataDO.setX(result.get(0));
             cutDataDO.setY(result.get(1));
             cutDataDO.setW(result.get(2));
@@ -75,16 +83,15 @@ public class EdgeCutService {
             cutDataDO.setStatus(1);
             cutDataDO.setDeleteMark(0);
             cutDataMapper.insertOrCancel(cutDataDO);
-//            String edge = String.format("%d/%d/%d/%d", result.get(0), result.get(1), result.get(2), result.get(3));
-//            ossUtil.addMetaData(filePath, "edge", edge);
-//            ossUtil.addMetaData(filePath, "cutstatus", "0");
         } catch (Throwable e) {
             logger.error("work error. filePath = {}", filePath, e);
+        } finally {
+            cutTask.getFinishCnt().incrementAndGet();
         }
     }
 
-    public void runAsync(String prefix, String filePath){
-        threadPoolExecutor.execute(() -> runSync(prefix, filePath));
+    public void runAsync(CutTask cutTask, String filePath){
+        threadPoolExecutor.execute(() -> runSync(cutTask, filePath));
     }
 
     private List<Integer> work(String filePath) throws IOException {
@@ -216,6 +223,7 @@ public class EdgeCutService {
         File toZip = File.createTempFile("toZip", ".tif");
         ossUtil.getObject(key, style, toZip);
         downloadTask.nextEntry(key.substring(key.indexOf("/") + 1), toZip);
+        toZip.delete();
     }
 
 }

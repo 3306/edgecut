@@ -2,9 +2,18 @@ package com.edgecut.entity;
 
 public class CutDataQTO {
     private String prefix;
+    private String key;
     private Integer currentPage;
     private Integer pageSize;
     private Integer status;
+
+    public String getKey() {
+        return key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
 
     public String getPrefix() {
         return prefix;

@@ -5,6 +5,7 @@ import com.edgecut.entity.CutDataDO;
 import com.edgecut.entity.CutDataQTO;
 import com.edgecut.mapper.CutDataMapper;
 import com.edgecut.oss.CutResult;
+import com.edgecut.oss.CutTask;
 import com.edgecut.oss.DownloadTask;
 import com.edgecut.oss.OssUtil;
 import com.edgecut.service.EdgeCutService;
@@ -20,7 +21,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,18 +40,24 @@ public class ServiceController{
 
     private String ossUrl = "http://edgecut.oss-cn-shanghai.aliyuncs.com/";
 
-    private Map<String, DownloadTask> downloadTaskMap = new ConcurrentHashMap<>();
-
     private Cache<String, DownloadTask> downloadCache = CacheBuilder.newBuilder()
+            .expireAfterWrite(30, TimeUnit.MINUTES).build();
+
+    private Cache<String, CutTask> runCache = CacheBuilder.newBuilder()
             .expireAfterWrite(30, TimeUnit.MINUTES).build();
 
     @RequestMapping("/run")
     @ResponseBody
-    public int batchRun(@RequestParam("prefix") String prefix){
+    public synchronized CutTask batchRun(@RequestParam("prefix") String prefix) throws ExecutionException {
         if (!prefix.endsWith("/")){
             prefix = prefix + "/";
         }
-        return edgeCutService.batchRun(prefix);
+        if (getRunStatus(prefix) != 0){
+            throw new IllegalArgumentException("该批次已在运行中");
+        }
+        CutTask cutTask = edgeCutService.batchRun(prefix);
+        runCache.put(prefix, cutTask);
+        return cutTask;
     }
 
     @RequestMapping("/baseDir")
@@ -62,13 +68,48 @@ public class ServiceController{
 
     @RequestMapping("/dirCount")
     @ResponseBody
-    public Map<String, AtomicInteger> dirCount(@RequestParam("prefix") String prefix){
+    public Map<String, Object> dirCount(@RequestParam("prefix") String prefix) throws ExecutionException {
         if (!prefix.endsWith("/")){
             prefix = prefix + "/";
         }
+        Map<String, Object> result = new HashMap<>();
+        result.putAll(count(prefix));
+        result.put("runStatus", getRunStatus(prefix));
+        result.put("downloadStatus", getDownloadStatus(prefix, result));
+
+        return result;
+    }
+
+    private int getDownloadStatus(String prefix, Map<String, Object> result) throws ExecutionException {
+        DownloadTask downloadTask = downloadCache.get(prefix, DownloadTask::new);
+        if (downloadTask.getTargetUrl() != null){
+            if (downloadTask.getClosed()){
+                if (result != null){
+                    result.put("downloadUrl", downloadTask.getTargetUrl());
+                }
+                return 0;
+            } else {
+                return 1;
+            }
+        } else {
+            return 0;
+        }
+    }
+
+    private int getRunStatus(String prefix) throws ExecutionException {
+        CutTask cutTask = runCache.get(prefix, CutTask::new);
+        if (cutTask.getPrefix() == null || cutTask.getAllCnt().intValue() == cutTask.getFinishCnt().intValue()){
+            return 0;
+        } else {
+            return 1;
+        }
+    }
+
+    private Map<String, AtomicInteger> count(String prefix) {
         CutDataQTO cutDataQTO = new CutDataQTO();
         cutDataQTO.setPrefix(prefix);
         List<CutDataDO> cutDataCountDOS = cutDataMapper.query(cutDataQTO);
+
         Map<String, AtomicInteger> count = new HashMap<>();
         Set<String> keys = new HashSet<>();
         for (CutDataDO cutDataDO : cutDataCountDOS) {
@@ -87,15 +128,17 @@ public class ServiceController{
             }
             count.computeIfAbsent("step-0" , str -> new AtomicInteger()).incrementAndGet();
         }
-
         return count;
     }
 
     @RequestMapping("/download")
     @ResponseBody
-    public DownloadTask download(@RequestParam("prefix") String prefix){
+    public synchronized DownloadTask download(@RequestParam("prefix") String prefix) throws ExecutionException {
         if (!prefix.endsWith("/")){
             prefix = prefix + "/";
+        }
+        if (getDownloadStatus(prefix, null) != 0){
+            throw new IllegalArgumentException("该批次已在下载中。");
         }
         DownloadTask downloadTask = edgeCutService.batchDownload(prefix);
         downloadTask.setTargetUrl(ossUrl + downloadTask.getTargetUrl());

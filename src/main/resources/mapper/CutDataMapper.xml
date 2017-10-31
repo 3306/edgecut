@@ -17,6 +17,9 @@
         <if test="prefix != null">
             and prefix = #{prefix}
         </if>
+        <if test="key != null">
+            and `key` = #{key}
+        </if>
         <if test="status != null">
             and status = #{status}
         </if>
@@ -32,6 +35,9 @@
         where delete_mark = 0
         <if test="prefix != null">
             and prefix = #{prefix}
+        </if>
+        <if test="key != null">
+            and `key` = #{key}
         </if>
         <if test="status != null">
             and status = #{status}

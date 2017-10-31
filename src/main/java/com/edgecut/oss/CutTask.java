@@ -1,30 +1,37 @@
 package com.edgecut.oss;
 
-import com.edgecut.entity.CutDataDO;
-import org.springframework.beans.BeanUtils;
-
-import java.io.*;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 public class CutTask {
 
+    private String prefix;
     private Date startTime;
     private AtomicInteger allCnt;
     private AtomicInteger finishCnt;
-    //任务生产结束，allCnt不再增长
+    //任务生产结束，
     private Boolean finish;
-    //任务消费结束，打包完成，可以下载
+    //任务消费结束，
     private Boolean over;
 
-    public CutTask(String fileName) {
+    public CutTask() {
+    }
+
+    public CutTask(String prefix) {
+        this.prefix = prefix;
         startTime = new Date();
         allCnt = new AtomicInteger();
         finishCnt = new AtomicInteger();
         finish = false;
         over = false;
+    }
+
+    public String getPrefix() {
+        return prefix;
+    }
+
+    public void setPrefix(String prefix) {
+        this.prefix = prefix;
     }
 
     public Date getStartTime() {
