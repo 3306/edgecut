@@ -3,6 +3,7 @@ package com.edgecut.service;
 import com.aliyun.oss.model.OSSObjectSummary;
 import com.aliyun.oss.model.ObjectListing;
 import com.edgecut.entity.CutDataDO;
+import com.edgecut.entity.CutDataQTO;
 import com.edgecut.mapper.CutDataMapper;
 import com.edgecut.oss.DownloadTask;
 import com.edgecut.oss.OssUtil;
@@ -154,9 +155,9 @@ public class EdgeCutService {
         DownloadTask downloadTask = new DownloadTask(ossDir + "/" + fileName);
         downloadTask.setTargetUrl(fileName);
 
-        CutDataDO queryDO = new CutDataDO();
-        queryDO.setPrefix(prefix);
-        List<CutDataDO> cutDataDOS = cutDataMapper.query(queryDO);
+        CutDataQTO cutDataQTO = new CutDataQTO();
+        cutDataQTO.setPrefix(prefix);
+        List<CutDataDO> cutDataDOS = cutDataMapper.query(cutDataQTO);
         for (CutDataDO cutDataDO : cutDataDOS) {
             downloadTask.getAllCnt().incrementAndGet();
             downloadAsync(downloadTask, cutDataDO);
