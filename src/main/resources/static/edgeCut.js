@@ -24,6 +24,17 @@
 </div>
                 `
     };
+    let fixListItemTemplate = (imgUrl,key)=>{
+        return `    <div class="col-xs-6">
+    <div class="my-thumbnail">
+      <img id="${getId(key)}" src="${imgUrl}" alt="123121323">
+      <div class="caption">
+        <a data-originkey="${key}" data-key="${getId(key)}" class="alter-pic btn btn-primary btn-block" role="button">确认修改</a>
+      </div>
+    </div>
+</div>
+                `
+    };
 
     let fetchPic = (prefix,currentPage,status = 1)=>{
         return new Promise((resolve)=>{
@@ -41,7 +52,12 @@
                         // console.log (res.data);
                         allCount = res.count;
                         let result = res.data.map((item)=>{
-                            return listItemTemplate(item.originDownloadUrl+'?x-oss-process=image/format,jpg/quality,q_20',item.key);
+                            if(status === 1){
+                                return listItemTemplate(item.originDownloadUrl+'?x-oss-process=image/format,jpg/quality,q_20',item.key);
+                            }else{
+                                return fixListItemTemplate(item.originDownloadUrl+'?x-oss-process=image/format,jpg/quality,q_20',item.key);
+                            }
+
                         })
                         // console.log (result);
                         // list.append(result)
@@ -52,10 +68,15 @@
                         }
 
                         res.data.forEach((item)=>{
-                            $(`#${getId(item.key)}`).Jcrop({
-                                boxHeight:window.screen.height - 300,
+                            let config = {
                                 allowSelect:false
-                            },function () {
+                            };
+                            if(status !== 1){
+                                config.boxWidth = window.screen.width/2 - 30;
+                            }else{
+                                config.boxHeight = window.screen.height - 300;
+                            }
+                            $(`#${getId(item.key)}`).Jcrop(config,function () {
                                 // this.setSelect([100,100,200,150],function (a) {
                                 //     console.log ('123132');
                                 // })
