@@ -11,6 +11,16 @@
     let listCurrentPage = 1;
     let fixedListCurrentPage = 1;
     let allCount = undefined;
+    let dur = 1;
+    let options = {
+        useEasing:true,
+        useGrouping:true,
+        separator:',',
+        decimal:'.'
+    }
+    var leftCount = new CountUp("leftCount", 0, 0,0,dur,options);
+    var finishCount = new CountUp("finishCount",  0, 0,0,dur,options);
+
     let pageSize = 5;
     let all = {};
     let listItemTemplate = (imgUrl,key)=>{
@@ -50,7 +60,8 @@
                     dataType:'jsonp',
                     success:(res)=>{
                         // console.log (res.data);
-                        allCount = res.count;
+
+
                         let result = res.data.map((item)=>{
                             if(status === 1){
                                 return listItemTemplate(item.originDownloadUrl+'?x-oss-process=image/format,jpg/quality,q_20',item.key);
@@ -63,7 +74,10 @@
                         // list.append(result)
                         if(status === 1){
                             list.html(result);
+                            leftCount.update(res.count);
                         }else{
+                            allCount = res.count;
+                            finishCount.update(res.count);
                             fixedList.html(result);
                         }
 
@@ -115,7 +129,9 @@
                 // console.log($(e.target).parents('.col-xs-4'));
 
                 if ($(e.target).parents('#home').length === 1) {
-                    if (list.children().length < 3) {
+                    leftCount.update(--leftCount.endVal);
+                    finishCount.update(++finishCount.endVal);
+                    if (list.children().length < 2) {
                         fetchPic(prefix,listCurrentPage,1);
                     }else{
                         $(e.target).parents('.col-xs-12').remove();

@@ -10,6 +10,7 @@
     <script src="//cdn.bootcss.com/jquery-jcrop/0.9.12/js/jquery.Jcrop.min.js"></script>
     <script src="//cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     <script src="//cdn.bootcss.com/jquery-jgrowl/1.4.6/jquery.jgrowl.min.js"></script>
+    <script src="https://cdn.bootcss.com/countup.js/1.9.2/countUp.min.js"></script>
 </head>
 <body class="edgeCut">
 <nav class="navbar navbar-default">
@@ -37,8 +38,16 @@
 
     <!-- Nav tabs -->
     <ul class="nav nav-tabs" role="tablist">
-        <li role="presentation" class="active"><a href="#home" aria-controls="home" role="tab" data-toggle="tab">未人工修改</a></li>
-        <li role="presentation"><a href="#profile" aria-controls="profile" role="tab" data-toggle="tab">已人工修改</a></li>
+        <li role="presentation" class="active">
+            <a href="#home" aria-controls="home" role="tab" data-toggle="tab">
+                未人工修改(<span id="leftCount">0</span>)
+            </a>
+        </li>
+        <li role="presentation">
+            <a href="#profile" aria-controls="profile" role="tab" data-toggle="tab">
+                已人工修改(<span id="finishCount">0</span>)
+            </a>
+        </li>
     </ul>
 
     <!-- Tab panes -->
