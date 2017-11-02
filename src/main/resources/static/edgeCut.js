@@ -11,10 +11,31 @@
     let listCurrentPage = 1;
     let fixedListCurrentPage = 1;
     let allCount = undefined;
+    let dur = 1;
+    let options = {
+        useEasing:true,
+        useGrouping:true,
+        separator:',',
+        decimal:'.'
+    }
+    var leftCount = new CountUp("leftCount", 0, 0,0,dur,options);
+    var finishCount = new CountUp("finishCount",  0, 0,0,dur,options);
+
     let pageSize = 5;
     let all = {};
     let listItemTemplate = (imgUrl,key)=>{
         return `    <div class="col-xs-12">
+    <div class="my-thumbnail">
+      <img id="${getId(key)}" src="${imgUrl}" alt="123121323">
+      <div class="caption">
+        <a data-originkey="${key}" data-key="${getId(key)}" class="alter-pic btn btn-primary btn-block" role="button">确认修改</a>
+      </div>
+    </div>
+</div>
+                `
+    };
+    let fixListItemTemplate = (imgUrl,key)=>{
+        return `    <div class="col-xs-6">
     <div class="my-thumbnail">
       <img id="${getId(key)}" src="${imgUrl}" alt="123121323">
       <div class="caption">
@@ -39,23 +60,37 @@
                     dataType:'jsonp',
                     success:(res)=>{
                         // console.log (res.data);
-                        allCount = res.count;
+
+
                         let result = res.data.map((item)=>{
-                            return listItemTemplate(item.originDownloadUrl+'?x-oss-process=image/format,jpg/quality,q_20',item.key);
+                            if(status === 1){
+                                return listItemTemplate(item.originDownloadUrl+'?x-oss-process=image/format,jpg/quality,q_20',item.key);
+                            }else{
+                                return fixListItemTemplate(item.originDownloadUrl+'?x-oss-process=image/format,jpg/quality,q_20',item.key);
+                            }
+
                         })
                         // console.log (result);
                         // list.append(result)
                         if(status === 1){
                             list.html(result);
+                            leftCount.update(res.count);
                         }else{
+                            allCount = res.count;
+                            finishCount.update(res.count);
                             fixedList.html(result);
                         }
 
                         res.data.forEach((item)=>{
-                            $(`#${getId(item.key)}`).Jcrop({
-                                boxHeight:window.screen.height - 300,
+                            let config = {
                                 allowSelect:false
-                            },function () {
+                            };
+                            if(status !== 1){
+                                config.boxWidth = window.screen.width/2 - 30;
+                            }else{
+                                config.boxHeight = window.screen.height - 300;
+                            }
+                            $(`#${getId(item.key)}`).Jcrop(config,function () {
                                 // this.setSelect([100,100,200,150],function (a) {
                                 //     console.log ('123132');
                                 // })
@@ -94,7 +129,9 @@
                 // console.log($(e.target).parents('.col-xs-4'));
 
                 if ($(e.target).parents('#home').length === 1) {
-                    if (list.children().length < 3) {
+                    leftCount.update(--leftCount.endVal);
+                    finishCount.update(++finishCount.endVal);
+                    if (list.children().length < 2) {
                         fetchPic(prefix,listCurrentPage,1);
                     }else{
                         $(e.target).parents('.col-xs-12').remove();

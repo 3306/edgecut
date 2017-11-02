@@ -38,7 +38,7 @@
                         </td>
                         <td>
                             ${neverRun > 0 ? `<a class="btn btn-default run" data-key="${item.substr(0, item.length - 1)}">运行</a>` : ''}
-                            ${fixed === all ? `<a  class="btn btn-default download" data-key="${prefix}">下载!</a>` : ''}
+                            ${fixed === all ? `<a  class="btn btn-default download" data-loading-text="正在打包中..." data-key="${prefix}">下载!</a>` : ''}
                         </td>
                     </tr>`;
                     tbody.append(result);
@@ -76,10 +76,62 @@
             },
             dataType: 'jsonp',
             success: (res) => {
-                console.log(res);
+                if(res.over){
+                    $.jGrowl('运行完成');
+                    window.location.href = window.location.href;
+                }else{
+                    $.jGrowl('运行中')
+                }
             }
         })
     });
+
+    $('body').on('click','.download',(e)=>{
+        var $btn = $(e.target).button('loading')
+        // business logic...
+
+        let prefix = e.target.dataset.key;
+        $.ajax({
+            url: host + '/service/download',
+            data: {
+                prefix
+            },
+            dataType: 'jsonp',
+            success: (res) => {
+                console.log(res);
+                fetchDownloadStatus(res.targetUrl).then((download)=>{
+                    console.log(download);
+                    window.open(download.targetUrl);
+                    $btn.button('reset')
+                });
+            }
+        })
+    });
+
+    function fetchDownloadStatus(file) {
+        function fetch(file,resolve) {
+            $.ajax({
+                url:host+'/service/downloadStatus',
+                data:{
+                    key:file
+                },
+                dataType:'jsonp',
+                success:(res)=>{
+                    if(res.closed){
+                        resolve(res);
+                    }else{
+                        setTimeout(()=>{
+                            fetch(file,resolve)
+                        },2000)
+                    }
+                }
+            })
+        }
+        return new Promise((resolve)=>{
+            console.log(resolve);
+            fetch(file,resolve);
+        });
+    }
 
     window.onload = function () {
 
