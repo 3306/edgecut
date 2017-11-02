@@ -1,5 +1,4 @@
 (($) => {
-    // let host = ""
     let host = "//101.132.181.91";
     let tbody = $('#mainTable');
     $.ajax({
@@ -39,7 +38,7 @@
                         </td>
                         <td>
                             ${neverRun > 0 ? `<a class="btn btn-default run" data-key="${item.substr(0, item.length - 1)}">运行</a>` : ''}
-                            ${fixed === all ? `<a  class="btn btn-default download" data-key="${prefix}">下载</a>` : ''}
+                            ${fixed === all ? `<a  class="btn btn-default download" data-key="${prefix}">下载!</a>` : ''}
                         </td>
                     </tr>`;
                     tbody.append(result);
